@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Spring Boot REST Demo(前端用underscore.js实现)</title>
+<link rel="stylesheet" href="/webjars/bootstrap/css/bootstrap.min.css"/>
+<script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="/webjars/underscore/underscore-min.js"></script>
+</head>
+<body>
+	<div class="container" style="width: 80%;">
+		<br />
+		<div class="alert alert-success">
+			<a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
+			<strong>Spring Boot实现Restful并对数据库CRUD操作的示例</strong>
+			<ul>
+				<li>同时使用了Spring Data JPA，需先创建MySQL数据库名为springbootdb，</li>
+				<li>数据库表会自动创建(Hibernate开启了ddl-auto:update)</li>
+				<li>其他数据库配置参见项目/src/main/resources/application.properties文件</li>
+				<li>还使用了webjars引入jQuery和BootStrap等</li>
+			</ul>
+		</div>
+	</div>
+	
+	<div class="container">
+	<form id="myform" action="student" method="post" style="text-align:center;">
+		<input type="hidden" name="id">
+		姓名：<input type="text" name="name"> 
+		年龄：<input type="text" name="age">
+		<input type="button" onclick="save()" value="添加">
+	
+	
+	<input type="button" value="查找全部" onclick="getall()">
+	<input type="button" value="更新当前选中" onclick="updateSel()">
+	
+	<div id="datatable" class="col-center-block"></div>
+	
+	<script id="tpl" type="text/template">
+	<%if(data.length>0){%>
+	<table id="testTable" class="table table-striped table-bordered" style="width:80%; margin: 0 auto;">
+		<caption>学生列表</caption>
+		<thead>
+		<tr>
+			<th>选择</th>
+	        <th>编号</th>
+	        <th>姓名</th>
+	        <th>年龄</th>
+	        <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+		<%_.each(data,function(item, i){%>
+        <tr id="template">
+			<td><input type='radio' name="selectedStu" value="<%= item.id%>" onclick='changeSel()'></td>
+            <td><%= item.id%></td>
+            <td><%= item.name%></td>
+            <td><%= item.age%></td>
+            <td id="operation"><input type='button' value='删除' onclick='deleteStudent(<%= item.id%>)'></td>
+        </tr>
+		<% }); %>
+        </tbody>
+    </table>
+	<%}%>
+	</script>
+	
+	</form>
+	</div>
+	
+	<script>
+		getall();
+		$.fn.serializeJson= function()
+		{
+		    var o = {};
+		    var a = this.serializeArray();
+		    $.each(a, function(){
+		        if(o[this.name]){
+		            if(!o[this.name].push){
+		                o[this.name] = [o[this.name]];
+		            }
+		            o[this.name].push(this.value ||'');
+		        } else {
+		            o[this.name] = this.value || '';
+		        }
+		    });
+		    return o;
+		};
+		
+		//添加
+		function save(){
+			myform['id'].value = 0;
+			$.ajax({
+				type:"POST",
+				url:"student",				
+				data:JSON.stringify($("#myform").serializeJson()),
+				contentType:"application/json",
+				success:function(){
+					//console.log("添加成功！");
+					getall();
+				}
+			});
+		}
+		
+		function deleteStudent(id){
+			$.ajax({
+				type:"DELETE",
+				url:"student/"+id,
+				success:function(){
+					getall();
+				}
+			});
+			
+		}
+		
+		function getall(){
+			$.get({
+				url:"/students",
+				success:function(data){
+		            var tpl = document.getElementById("tpl").innerHTML.trim();
+		            var render = _.template(tpl);
+		            var resultHTML= render({data:data});
+		            document.getElementById("datatable").innerHTML = resultHTML;
+		            var curId = myform['id'].value;
+		            if(curId != '')
+		            	$("input[name='selectedStu'][value="+curId+"]").prop("checked",true);
+				}
+			})
+		}
+		
+		function changeSel(){
+			var selectedId = myform['selectedStu'].value;
+			$.get({
+				url:"/students/id/"+selectedId,
+				success:function(data){
+		            myform['name'].value = data['name'];
+		            myform['age'].value = data['age'];
+				}
+			})
+		}
+		
+		function updateSel(){
+			myform['id'].value=myform['selectedStu'].value;
+			var curId = myform['id'].value;
+			$.ajax({
+				type:"PUT",
+				url:"student",				
+				data:JSON.stringify($("#myform").serializeJson()),
+				contentType:"application/json",
+				success:function(){
+					//console.log("添加成功！");
+					getall();
+				}
+			});
+		}
+	</script>
+</body>
+</html>

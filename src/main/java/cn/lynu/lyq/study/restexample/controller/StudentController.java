@@ -31,6 +31,11 @@ public class StudentController {
 		return studentService.findAll();
 	}
 	
+	@RequestMapping(value = "/students/id/{id}", method = RequestMethod.GET)
+	public Student findStudentById(@PathVariable("id") Integer id) {
+		return studentService.findById(id);
+	}
+	
 	@RequestMapping(value = "/students/name/{name}", method = RequestMethod.GET)
 	public List<Student> findStudentsByName(@PathVariable("name") String name) {
 		return studentService.findByName(name);
