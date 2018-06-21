@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Fetch With Vue.js Test</title>
+<link rel="stylesheet" href="/webjars/bootstrap/css/bootstrap.min.css"/>
+<script type="text/javascript" src="/webjars/vue/dist/vue.min.js"></script>
+</head>
+<body>
+	<form id="myform" action="student" method="post" style="text-align:center;">
+		<input type="hidden" name="id">
+		姓名：<input type="text" name="name"> 
+		年龄：<input type="text" name="age">
+		<input type="button" onclick="save()" value="添加">
+		
+		
+		<input type="button" value="查找全部" onclick="getAll()">
+		<input type="button" value="更新当前选中" onclick="updateSel()">
+		
+		<table id="testTable" class="table table-striped table-bordered" style="width:80%; margin: 0 auto;" v-if="havedata">
+			<caption>学生列表</caption>
+			<thead>
+			<tr>
+				<th>选择</th>
+		        <th>编号</th>
+		        <th>姓名</th>
+		        <th>年龄</th>
+		        <th>操作</th>
+	        </tr>
+	        </thead>
+	        <tbody>
+	        <tr id="template" v-for="item in students" :key="item.id">
+				<td><input type='radio' name="selectedStu" :value="item.id" onclick='changeSel()'></td>
+	            <td>{{item.id}}</td>
+	            <td>{{ item.name}}</td>
+	            <td>{{ item.age}}</td>
+	            <td id="operation"><input type='button' value='删除' @click='deleteStudent(item.id)'></td>
+	        </tr>
+	        </tbody>
+	    </table>
+    
+    </form>
+	<script>
+		var app = new Vue({
+	    	el:"#testTable",
+	    	data:{
+	    		students: [],
+	    		havedata: false,
+	    	},
+	    	methods:{
+	    		deleteStudent:function(id){
+	    			deleteStudent(id);
+	    		}
+	    	},
+	    });
+		
+		getAll();
+		
+		function getAll(){
+			fetch("students")
+			.then((resp)=>{return resp.json();})
+			.then((students)=>{
+				app.students=students; 
+				app.havedata=(app.students.length>0);
+			});
+		}
+		
+		function deleteStudent(id){
+			fetch("student/"+id,{method:"DELETE"})
+			.then((resp)=>{
+				getAll();
+			});
+		}
+		
+		function save(){
+			fetch("student",{
+					method:"POST",
+					headers:{
+						"Content-Type":"application/json",
+					},
+					body:JSON.stringify({
+						name:myform.name.value,
+						age:myform.age.value,
+					})
+			})
+			.then((resp)=>{
+				getAll();
+			});
+		}
+		
+		function changeSel(){
+			var selectedId = myform['selectedStu'].value;
+			fetch("/students/id/"+selectedId)
+			.then((resp)=>{return resp.json();})
+			.then((student)=>{
+					myform['name'].value = student.name;
+		            myform['age'].value = student.age;
+			})
+		}
+		
+		function updateSel(){
+			myform['id'].value=myform['selectedStu'].value;
+			var curId = myform['id'].value;
+			if(curId!=""){
+				fetch("student",{
+					method:"PUT",
+					headers:{
+						"Content-Type":"application/json",
+					},
+					body:JSON.stringify({
+						id:curId,
+						name:myform.name.value,
+						age:myform.age.value,
+					}),
+				})
+				.then((resp)=>{
+					getAll();
+				});
+			}
+		}
+	</script>
+</body>
+</html>
